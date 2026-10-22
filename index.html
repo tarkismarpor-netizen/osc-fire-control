@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OSC Fire Control</title>
+<style>
+:root{color-scheme:dark;--bg:#080b10;--panel:#10151e;--line:#252e3d;--muted:#7f8da6;--text:#eef3ff;--blue:#83b3ff;--gold:#ffd66b}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top left,#1a2231 0,#0a0d13 48%,#07090d 100%);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text);min-height:100vh;padding:20px}
+.app{max-width:1120px;margin:auto;border:1px solid #252c38;border-radius:28px;overflow:hidden;background:rgba(10,13,19,.9);box-shadow:0 22px 70px #0008}.header{padding:24px 28px;border-bottom:1px solid #252c38;font-size:20px;font-weight:850;letter-spacing:-.5px}.layout{display:grid;grid-template-columns:1.2fr 1fr;gap:26px;padding:28px}.section{margin-bottom:24px}.section h2{font-size:12px;letter-spacing:2px;color:var(--blue);margin:0 0 12px;font-weight:850}.group{border:1px solid var(--line);border-radius:20px;padding:20px;background:linear-gradient(145deg,#10151e,#0d1118)}.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.field label{display:block;color:var(--muted);font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin:0 0 8px}.field input{width:100%;min-width:0;background:#171e29;color:var(--gold);border:1px solid #252e3b;border-radius:13px;padding:14px 12px;font:700 16px ui-monospace,SFMono-Regular,Consolas,monospace;outline:none}.field input:focus{border-color:#669bfa;box-shadow:0 0 0 3px #669bfa22}.actions{display:flex;gap:12px;margin-top:4px}.btn{border:1px solid #29364a;border-radius:14px;padding:16px 18px;font-weight:850;cursor:pointer;background:#1a2639;color:#b9d3ff}.btn.primary{flex:1;background:linear-gradient(180deg,#203149,#111a28)}.btn.secondary{background:#11151c;color:var(--muted);border-color:#202631}.results{border:1px solid var(--line);border-radius:24px;background:#0d1118;min-height:420px;padding:24px;display:flex;flex-direction:column;justify-content:center}.idle{text-align:center;color:var(--muted);line-height:1.8}.results h3{margin:0 0 18px;font-size:17px}.metric{border:1px solid var(--line);background:#111721;border-radius:15px;padding:16px;margin-bottom:12px}.metric .k{font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);font-weight:800}.metric .v{font:800 25px ui-monospace,monospace;color:var(--gold);margin-top:7px}.metric p{font-size:12px;color:var(--muted);margin:8px 0 0}.note{font-size:12px;color:var(--muted);line-height:1.65;margin-top:12px}.error{color:#ff9999;font-size:13px;margin-top:10px}.hidden{display:none!important}
+@media(max-width:760px){body{padding:8px}.app{border-radius:18px}.layout{grid-template-columns:1fr;padding:16px;gap:10px}.header{padding:20px}.results{min-height:300px}.fields{gap:8px}.group{padding:14px}.field input{padding:12px 8px;font-size:15px}.actions{flex-direction:column}}
+</style></head><body>
+<div class="app"><header class="header">☢ &nbsp; OSC Fire Control</header><main class="layout"><div>
+<section class="section"><h2>CANNON ORIGIN</h2><div class="group fields">
+<div class="field"><label for="ox">Origin X</label><input id="ox" type="number" value="-33" step="1"></div>
+<div class="field"><label for="oy">Origin Y</label><input id="oy" type="number" value="-61" step="1"></div>
+<div class="field"><label for="oz">Origin Z</label><input id="oz" type="number" value="0" step="1"></div>
+</div></section>
+<section class="section"><h2>TARGET COORDINATES</h2><div class="group fields">
+<div class="field"><label for="tx">Target X</label><input id="tx" type="number" value="-133" step="1"></div>
+<div class="field"><label for="ty">Target Y</label><input id="ty" type="number" value="-60" step="1"></div>
+<div class="field"><label for="tz">Target Z</label><input id="tz" type="number" value="100" step="1"></div>
+</div></section>
+<div class="actions"><button class="btn secondary" id="reset">Reset Settings</button><button class="btn primary" id="compute">Compute Fire Control</button></div>
+<p class="note">Calibration: 91 wind charges per 100 blocks on X and Z. Y is shown as a coordinate difference only because no vertical calibration has been provided.</p>
+</div><aside class="results" id="results"><div class="idle">System Idle.<br>Enter coordinates, then compute fire control.</div></aside></main></div>
+<script>
+const ids=['ox','oy','oz','tx','ty','tz'];const el=id=>document.getElementById(id);
+function compute(){const v=Object.fromEntries(ids.map(id=>[id,Number(el(id).value)]));if(ids.some(id=>el(id).value.trim()===''||!Number.isFinite(v[id]))){el('results').innerHTML='<div class="error">Please enter a valid number in every coordinate field.</div>';return}
+const dx=v.tx-v.ox,dy=v.ty-v.oy,dz=v.tz-v.oz;const x=Math.round(Math.abs(dx)*.91),z=Math.round(Math.abs(dz)*.91);
+el('results').innerHTML=`<h3>Fire Control Solution</h3>
+<div class="metric"><div class="k">X axis · ${dx<0?'Negative X':dx>0?'Positive X':'No X displacement'}</div><div class="v">${Math.abs(dx)} blocks</div><p>Estimated charge count: <strong>${x} wind charges</strong></p></div>
+<div class="metric"><div class="k">Z axis · ${dz<0?'Negative Z':dz>0?'Positive Z':'No Z displacement'}</div><div class="v">${Math.abs(dz)} blocks</div><p>Estimated charge count: <strong>${z} wind charges</strong></p></div>
+<div class="metric"><div class="k">Y axis · Vertical difference</div><div class="v">${dy>0?'+':''}${dy} blocks</div><p>No wind-charge estimate shown: vertical behavior has not been calibrated.</p></div>
+<p class="note">X and Z are calculated independently for a right-angle launcher. The estimate uses 0.91 charges per block and rounds to the nearest whole charge. Validate long-range results in-game; this tool does not guarantee impact accuracy.</p>`}
+el('compute').addEventListener('click',compute);el('reset').addEventListener('click',()=>{const defaults={ox:-33,oy:-61,oz:0,tx:-68,ty:-60,tz:0};for(const id of ids)el(id).value=defaults[id];el('results').innerHTML='<div class="idle">System Idle.<br>Enter coordinates, then compute fire control.</div>'});
+</script></body></html>
